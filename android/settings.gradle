@@ -1,0 +1,5 @@
+rootProject.name = 'BackgroundTest'
+include ':react-native-background-fetch'
+project(':react-native-background-fetch').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-background-fetch/android')
+
+include ':app'
