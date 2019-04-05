@@ -9,7 +9,8 @@
   "dependencies": {
     "react": "16.8.3",
     "react-native": "0.59.3",
-    "react-native-background-fetch": "^2.5.1"
+    "react-native-background-fetch": "^2.5.1",
+    "realm": "^2.26.0"
   },
   "devDependencies": {
     "@babel/core": "^7.4.3",

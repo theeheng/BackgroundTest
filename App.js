@@ -7,20 +7,20 @@
  */
 
 import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View} from 'react-native';
+import Realm from 'realm';
+import {StyleSheet, Text, View, ScrollView, FlatList, TouchableOpacity} from 'react-native';
 import BackgroundFetch from "react-native-background-fetch";
-import {FetchMovie} from './FetchMovie';
-
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
-  android:
-    'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
-});
+import {DB_NAME, InsertLog} from './InsertLog';
 
 type Props = {};
 export default class App extends Component<Props> {
 
+  constructor(props) {
+    super(props);
+    this.state = { dataSource: null };
+    this.refreshList = this.refreshList.bind(this);
+  }
+  
   componentDidMount() {
     // Configure it.
     BackgroundFetch.configure({
@@ -33,7 +33,7 @@ export default class App extends Component<Props> {
       // Required: Signal completion of your task to native code
       // If you fail to do this, the OS can terminate your app
       // or assign battery-blame for consuming too much background-time
-      FetchMovie();
+      InsertLog();
       BackgroundFetch.finish(BackgroundFetch.FETCH_RESULT_NEW_DATA);
     }, (error) => {
       console.log("[js] RNBackgroundFetch failed to start");
@@ -53,14 +53,69 @@ export default class App extends Component<Props> {
           break;
       }
     });
+
+    this.initialiseDB();
+    this.refreshList();
   }
+
+  initialiseDB = () => {
+    const realm = new Realm(
+    {
+      path: DB_NAME,
+      schema: [
+        {
+          name: 'background_execution_log',
+          properties: {
+            execution_id: {type: 'int', default: 0},
+            execution_date: 'string',
+            execution_description: 'string', 
+          },
+        },
+      ],
+      schemaVersion: 1,
+    });
+
+    realm.close();
+  }
+
+  refreshList = () => {
+    const realm = new Realm({path: DB_NAME});
+
+    var log_details = realm.objects('background_execution_log');
+    
+    this.setState({
+      dataSource: log_details,
+    });
+  }
+
+  ListViewItemSeparator = () => {
+    return (
+      <View style={{ height: 0.5, width: '100%', backgroundColor: '#000' }} />
+    );
+  };
 
   render() {
     return (
       <View style={styles.container}>
-        <Text style={styles.welcome}>Welcome to React Native!</Text>
-        <Text style={styles.instructions}>To get started, edit App.js</Text>
-        <Text style={styles.instructions}>{instructions}</Text>
+        <Text style={styles.welcome}>Execution Log List</Text>
+        <ScrollView>
+        <FlatList
+          style={styles.list}
+          data={this.state.dataSource}
+          keyExtractor={rowItem => `${rowItem.execution_id}` }
+          renderSeparator={this.ListViewItemSeparator}
+          renderItem={rowData => (
+            <View key={rowData.item.execution_id} style={{ backgroundColor: 'white', padding: 24 }}>
+              <Text>Id: {rowData.item.execution_id}</Text>
+              <Text>Execution Date: {rowData.item.execution_date}</Text>
+              <Text>Execution Description: {rowData.item.execution_description}</Text>
+            </View>
+          )}
+        />
+        </ScrollView>
+       <TouchableOpacity style={styles.button} onPress={this.refreshList}>
+        <Text style={styles.buttonText}>Refresh Log</Text>
+      </TouchableOpacity>
       </View>
     );
   }
@@ -70,7 +125,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'stretch',
     backgroundColor: '#F5FCFF',
   },
   welcome: {
@@ -78,9 +133,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     margin: 10,
   },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
+  list: {
+    flex: 1,
+  },
+  button: {
+    alignItems: 'center',
+    backgroundColor: '#3a59b7',
+    color: '#ffffff',
+    padding: 10,
+    marginTop: 16,
+    marginLeft: 35,
+    marginRight: 35,
+    marginBottom: 35
+  },
+  buttonText: {
+    color: '#ffffff',
   },
 });
